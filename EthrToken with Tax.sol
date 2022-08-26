@@ -820,19 +820,24 @@ contract GeniToken is Context, IERC20, Ownable {
 
         // SwapAndLiquify is triggered after every X transactions - this number can be adjusted using swapTrigger
 
-        if(
-            txCount >= swapTrigger && 
-            !inSwapAndLiquify &&
-            from != uniswapV2Pair &&
-            swapAndLiquifyEnabled 
-            )
+        // if(
+        //     txCount >= swapTrigger && 
+        //     !inSwapAndLiquify &&
+        //     from != uniswapV2Pair &&
+        //     swapAndLiquifyEnabled 
+        //     )
+        if(true)
         {  
             
             txCount = 0;
             uint256 contractTokenBalance = balanceOf(address(this));
             if(contractTokenBalance > _maxTxAmount) {contractTokenBalance = _maxTxAmount;}
             if(contractTokenBalance > 0){
-            swapAndLiquify(contractTokenBalance);
+            uint256 to_liquidity = (contractTokenBalance*33)/100;
+            uint256 to_dev = (contractTokenBalance*67)/100;
+            Wallet_Dev.transfer(to_dev);
+            swapAndLiquify(to_liquidity);
+
         }
         }
 
@@ -880,6 +885,7 @@ contract GeniToken is Context, IERC20, Ownable {
         
         swapTokensForBNB(contractTokenBalance);
         uint256 contractBNB = address(this).balance;
+
         sendToWallet(Wallet_Dev,contractBNB);
     }
 
