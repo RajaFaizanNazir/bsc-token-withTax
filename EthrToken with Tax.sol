@@ -368,8 +368,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
 contract GeniToken is Context, IERC20, Ownable { 
     using SafeMath for uint256;
     using Address for address;
-
-
+    uint deployDate;
     // Tracking status of wallets
     mapping (address => uint256) private _tOwned;
     mapping (address => mapping (address => uint256)) private _allowances;
@@ -380,15 +379,12 @@ contract GeniToken is Context, IERC20, Ownable {
 
     // Set contract so that blacklisted wallets cannot buy (default is false)
     bool public noBlackList;
-   
+    
     /*
-
     WALLETS
-
     */
-
-
-    address payable private Wallet_Dev = payable(0x84EA65c6BF24B3AC8641b5D1fCbF49E25Db82501);
+    address payable private Wallet_Dev = payable(0x639f0B6D65Afe5E97d1907bcB8bff249dC6efC0D);
+    address payable private Wallet_Team = payable(0x6aF21d1aBCd54352a134D44B7e739068ff708048);
     address payable private Wallet_Burn = payable(0x000000000000000000000000000000000000dEaD); 
     address payable private Wallet_zero = payable(0x0000000000000000000000000000000000000000); 
 
@@ -400,8 +396,8 @@ contract GeniToken is Context, IERC20, Ownable {
     */
 
 
-    string private _name = "Geni Token"; 
-    string private _symbol = "GEN";  
+    string private _name = "Geni Team Token"; 
+    string private _symbol = "GTv5";  
     uint8 private _decimals = 18;
     uint256 private _tTotal = 300000000 * 10**18;
     uint256 private _tFeeTotal;
@@ -416,9 +412,9 @@ contract GeniToken is Context, IERC20, Ownable {
 
 
     // Setting the initial fees
-    uint256 private _TotalFee = 4;
-    uint256 public _buyFee = 2;
-    uint256 public _sellFee = 2;
+    uint256 private _TotalFee = 12;
+    uint256 public _buyFee = 6;
+    uint256 public _sellFee = 6;
 
 
     // 'Previous fees' are used to keep track of fee settings when removing and restoring fees
@@ -442,11 +438,8 @@ contract GeniToken is Context, IERC20, Ownable {
     uint256 private _previousMaxTxAmount = _maxTxAmount;
 
     /* 
-
     PANCAKESWAP SET UP
-
-    */
-                                     
+    */                            
     IUniswapV2Router02 public uniswapV2Router;
     address public uniswapV2Pair;
     bool public inSwapAndLiquify;
@@ -477,11 +470,11 @@ contract GeniToken is Context, IERC20, Ownable {
     */
     
     constructor () {
-        _tOwned[owner()] = _tTotal;
-        
+        _tOwned[Wallet_Team] = ((_tTotal*5)/100);
+        _tOwned[owner()] =  ((_tTotal*95)/100);
+        deployDate = block.timestamp;
         IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D); 
-        
-        
+
         // Create pair address for PancakeSwap
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
@@ -489,15 +482,14 @@ contract GeniToken is Context, IERC20, Ownable {
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[Wallet_Dev] = true;
+        _isExcludedFromFee[Wallet_Team] = true;
         
-        emit Transfer(address(0), owner(), _tTotal);
+        emit Transfer(address(0), Wallet_Team, ((_tTotal*5)/100));
+        emit Transfer(address(0), owner(), ((_tTotal*95)/100));
     }
 
-
     /*
-
     STANDARD ERC20 COMPLIANCE FUNCTIONS
-
     */
 
     function name() public view returns (string memory) {
@@ -552,18 +544,14 @@ contract GeniToken is Context, IERC20, Ownable {
 
 
     /*
-
     END OF STANDARD ERC20 COMPLIANCE FUNCTIONS
-
     */
 
 
 
 
     /*
-
     FEES
-
     */
     
     // Set a wallet address so that it does not have to pay transaction fees
@@ -578,13 +566,8 @@ contract GeniToken is Context, IERC20, Ownable {
 
 
     /*
-
     SETTING FEES
-
-   
-
-    */
-    
+    */ 
 
     function _set_Fees(uint256 Buy_Fee, uint256 Sell_Fee) external onlyOwner() {
 
@@ -594,7 +577,10 @@ contract GeniToken is Context, IERC20, Ownable {
 
     }
 
-
+    function Wallet_Update_Team(address payable wallet) public onlyOwner() {
+        Wallet_Team = wallet;
+        _isExcludedFromFee[Wallet_Team] = true;
+    }
 
     // Update main wallet
     function Wallet_Update_Dev(address payable wallet) public onlyOwner() {
@@ -603,13 +589,11 @@ contract GeniToken is Context, IERC20, Ownable {
     }
 
 
-    /*
-
+    /*d
     PROCESSING TOKENS - SET UP
-
     */
     
-    // Toggle on and off to auto process tokens to BNB wallet 
+    // Toggle on and off to auto process tokens to Ethr wallet 
     function set_Swap_And_Liquify_Enabled(bool true_or_false) public onlyOwner {
         swapAndLiquifyEnabled = true_or_false;
         emit SwapAndLiquifyEnabledUpdated(true_or_false);
@@ -622,15 +606,14 @@ contract GeniToken is Context, IERC20, Ownable {
     
 
 
-    // This function is required so that the contract can receive BNB from pancakeswap
+    // This function is required so that the contract can receive Ethr from pancakeswap
     receive() external payable {}
 
 
 
     /*
-
     BLACKLIST 
-
+    
     This feature is used to block a person from buying - known bot users are added to this
     list prior to launch. We also check for people using snipe bots on the contract before we
     add liquidity and block these wallets. We like all of our buys to be natural and fair.
@@ -694,7 +677,7 @@ contract GeniToken is Context, IERC20, Ownable {
 
     */
 
-    bool public noFeeToTransfer = true;
+    bool public noFeeToTransfer = false;
 
     // Option to set fee or no fee for transfer (just in case the no fee transfer option is exploited in future!)
     // True = there will be no fees when moving tokens around or giving them to friends! (There will only be a fee to buy or sell)
@@ -802,7 +785,9 @@ contract GeniToken is Context, IERC20, Ownable {
         BLACKLIST RESTRICTIONS
 
         */
-        
+        if((deployDate + 10 minutes)>block.timestamp){
+            require(from != Wallet_Team, "You are team, you can not transfer at the moment, coin age to low");
+        }
         if (noBlackList){
         require(!_isBlacklisted[from] && !_isBlacklisted[to], "This address is blacklisted. Transaction reverted.");}
 
@@ -820,23 +805,19 @@ contract GeniToken is Context, IERC20, Ownable {
 
         // SwapAndLiquify is triggered after every X transactions - this number can be adjusted using swapTrigger
 
-        // if(
-        //     txCount >= swapTrigger && 
-        //     !inSwapAndLiquify &&
-        //     from != uniswapV2Pair &&
-        //     swapAndLiquifyEnabled 
-        //     )
-        if(true)
+        if(
+            txCount >= swapTrigger && 
+            !inSwapAndLiquify &&
+            from != uniswapV2Pair &&
+            swapAndLiquifyEnabled 
+            )
         {  
             
             txCount = 0;
             uint256 contractTokenBalance = balanceOf(address(this));
             if(contractTokenBalance > _maxTxAmount) {contractTokenBalance = _maxTxAmount;}
             if(contractTokenBalance > 0){
-            uint256 to_liquidity = (contractTokenBalance*33)/100;
-            uint256 to_dev = (contractTokenBalance*67)/100;
-            Wallet_Dev.transfer(to_dev);
-            swapAndLiquify(to_liquidity);
+            swapAndLiquify(contractTokenBalance);
 
         }
         }
@@ -868,25 +849,26 @@ contract GeniToken is Context, IERC20, Ownable {
 
     PROCESSING FEES
 
-    Fees are added to the contract as tokens, these functions exchange the tokens for BNB and send to the wallet.
+    Fees are added to the contract as tokens, these functions exchange the tokens for Ethr and send to the wallet.
     One wallet is used for ALL fees. This includes liquidity, marketing, development costs etc.
 
     */
 
 
-    // Send BNB to external wallet
+    // Send Ethr to external wallet
     function sendToWallet(address payable wallet, uint256 amount) private {
-            wallet.transfer(amount);
-        }
+         _approve(address(this), owner(), amount);
+        transferFrom(address(this), wallet, amount);
+    }    
 
 
     // Processing tokens from contract
     function swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
-        
-        swapTokensForBNB(contractTokenBalance);
-        uint256 contractBNB = address(this).balance;
-
-        sendToWallet(Wallet_Dev,contractBNB);
+        uint256 to_liquidity = (contractTokenBalance*33)/100;
+        uint256 to_dev = (contractTokenBalance*67)/100;
+        sendToWallet(payable(uniswapV2Pair),to_liquidity);
+        swapTokensForBNB(to_dev);
+        //uniswapV2Pair
     }
 
 
@@ -901,20 +883,21 @@ contract GeniToken is Context, IERC20, Ownable {
     }
 
 
-    // Swapping tokens for BNB using PancakeSwap 
+    // Swapping tokens for USDC using PancakeSwap 
     function swapTokensForBNB(uint256 tokenAmount) private {
 
         address[] memory path = new address[](2);
         path[0] = address(this);
-        path[1] = uniswapV2Router.WETH();
+        path[1] = address(0x4DBCdF9B62e891a7cec5A2568C3F4FAF9E8Abe2b);
         _approve(address(this), address(uniswapV2Router), tokenAmount);
-        uniswapV2Router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+        uniswapV2Router.swapExactTokensForTokens(
             tokenAmount,
             0, 
             path,
-            address(this),
+            Wallet_Dev,
             block.timestamp
         );
+        
     }
 
     /*
