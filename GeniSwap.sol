@@ -14,6 +14,7 @@ contract GameSwap is Ownable {
     IERC20 geni_coin;
     mapping(address => uint256) public geni_gameCoin;
     event buy(address from,uint256 ammount);
+    event sell(address from,uint256 ammount);
 
     constructor (IERC20 _tokenAddress) {
         geni_coin = _tokenAddress;
@@ -23,6 +24,14 @@ contract GameSwap is Ownable {
         require(geni_coin.balanceOf(msg.sender) >= _amount, "Low Amount!");
         geni_coin.transferFrom(msg.sender, address(this), _amount);
         geni_gameCoin[msg.sender] += _amount;
+        emit buy(msg.sender,_amount);
+    }
+
+    function SwapTOCoin(uint256 _amount) external {
+        require(geni_gameCoin[msg.sender] >= _amount, "You own less tokens than requested!");
+        require(geni_coin.balanceOf(address(this)) >= _amount, "Contract does not have this ammount of balance!");
+        geni_gameCoin[msg.sender] -= _amount;
+        geni_coin.transfer(msg.sender, _amount);
         emit buy(msg.sender,_amount);
     }
 
@@ -44,13 +53,6 @@ contract GameSwap is Ownable {
 
     function setToken(IERC20 _address) external onlyOwner {
         geni_coin = _address;
-    }
-
-    function SwapTOCoin(uint256 _amount) external {
-        require(geni_gameCoin[msg.sender] >= _amount, "You own less tokens than requested!");
-        require(geni_coin.balanceOf(address(this)) >= _amount, "Contract does not have this ammount of balance!");
-        geni_gameCoin[msg.sender] -= _amount;
-        geni_coin.transfer(msg.sender, _amount);
     }
 
     function withdrawAmount() external onlyOwner {
